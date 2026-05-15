@@ -208,10 +208,10 @@ st.markdown(f"""
 <div class="top-bar">
   <div class="top-bar-left" style="display:flex;align-items:center;gap:18px;">
     <div style="background:#FFFFFF;border-radius:10px;padding:6px 10px;flex-shrink:0;">
-      <img src="{logo2_b64}" style="height:44px;object-fit:contain;display:block;">
+      <img src="{logo2_b64}" style="height:64px;object-fit:contain;display:block;">
     </div>
     <div>
-      <h1>DTX Aerospace — Commercial Pipeline</h1>
+      <h1>Commercial Pipeline</h1>
       <p>Pipeline: DTX LDG &nbsp;·&nbsp; Dados atualizados automaticamente via Pipedrive</p>
     </div>
   </div>
