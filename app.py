@@ -1,3 +1,4 @@
+import base64
 import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -7,6 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from dotenv import load_dotenv
+from PIL import Image
 from sqlalchemy import create_engine
 
 load_dotenv()
@@ -18,9 +20,17 @@ def get_secret(key):
     except Exception:
         return os.getenv(key)
 
+def _b64(path, mime):
+    with open(path, "rb") as f:
+        return f"data:image/{mime};base64,{base64.b64encode(f.read()).decode()}"
+
+logo1_b64 = _b64("logo1.jpg", "jpeg")
+logo2_b64 = _b64("logo2.png", "png")
+logo1_img  = Image.open("logo1.jpg")
+
 st.set_page_config(
     page_title="DTX Aerospace | Commercial Pipeline",
-    page_icon="✈️",
+    page_icon=logo1_img,
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -140,15 +150,12 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 def check_password():
     if st.session_state.get("authenticated"):
         return
-    st.markdown("""
+    st.markdown(f"""
     <div style="max-width:400px;margin:80px auto;background:#FFFFFF;border-radius:16px;
                 padding:40px;box-shadow:0 4px 24px rgba(0,0,0,.10);">
         <div style="text-align:center;margin-bottom:28px;">
-            <div style="font-size:36px;">✈️</div>
-            <div style="font-size:20px;font-weight:700;color:#0A1F44;margin-top:8px;">
-                DTX Aerospace
-            </div>
-            <div style="font-size:13px;color:#9CA3AF;margin-top:4px;">
+            <img src="{logo1_b64}" style="height:90px;object-fit:contain;margin-bottom:12px;">
+            <div style="font-size:13px;color:#9CA3AF;">
                 Commercial Pipeline Dashboard
             </div>
         </div>
@@ -199,9 +206,12 @@ last_sync_str = last_sync.astimezone(TZ).strftime("%d/%m/%Y %H:%M") if pd.notna(
 
 st.markdown(f"""
 <div class="top-bar">
-  <div class="top-bar-left">
-    <h1>✈️ &nbsp;DTX Aerospace — Commercial Pipeline</h1>
-    <p>Pipeline: DTX LDG &nbsp;·&nbsp; Dados atualizados automaticamente via Pipedrive</p>
+  <div class="top-bar-left" style="display:flex;align-items:center;gap:18px;">
+    <img src="{logo2_b64}" style="height:54px;object-fit:contain;flex-shrink:0;">
+    <div>
+      <h1>DTX Aerospace — Commercial Pipeline</h1>
+      <p>Pipeline: DTX LDG &nbsp;·&nbsp; Dados atualizados automaticamente via Pipedrive</p>
+    </div>
   </div>
   <div class="top-bar-right">
     🔄 Última sync &nbsp;<span>{last_sync_str} BRT</span><br>
