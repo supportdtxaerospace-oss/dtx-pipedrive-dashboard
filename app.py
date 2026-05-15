@@ -1,4 +1,5 @@
 import base64
+import io
 import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -19,6 +20,12 @@ def get_secret(key):
         return st.secrets[key]
     except Exception:
         return os.getenv(key)
+
+def to_excel_bytes(df):
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False)
+    return buf.getvalue()
 
 def _b64(path, mime):
     with open(path, "rb") as f:
@@ -474,6 +481,9 @@ with tab1:
     top5["Valor (USD)"] = top5["Valor (USD)"].apply(lambda x: f"$ {x:,.0f}")
     top5["Status"] = top5["Status"].map({"open": "🔵 Aberto", "won": "🟢 Ganho", "lost": "🔴 Perdido"})
     st.dataframe(top5, use_container_width=True, hide_index=True)
+    st.download_button("📥 Exportar Excel", to_excel_bytes(top5), "top5_deals.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                       key="dl_top5")
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -645,6 +655,9 @@ with tab2:
 
     st.caption(f"{len(tbl)} deal(s) · Total: $ {tbl['value'].sum():,.0f}")
     st.dataframe(disp_tbl, use_container_width=True, hide_index=True)
+    st.download_button("📥 Exportar Excel", to_excel_bytes(disp_tbl), "pipeline_comercial.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                       key="dl_pipeline")
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -785,3 +798,6 @@ with tab3:
 
     st.caption(f"{len(tbl3)} ativo(s) · Receita: $ {tbl3['lease_fee'].sum():,.0f} · Custo: $ {tbl3['monthly_costs'].sum():,.0f}")
     st.dataframe(t3d, use_container_width=True, hide_index=True)
+    st.download_button("📥 Exportar Excel", to_excel_bytes(t3d), "portfolio_ativos.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                       key="dl_portfolio")

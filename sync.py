@@ -188,6 +188,12 @@ def main():
         products = fetch_deal_products(deal["id"])
         upsert_products(cur, deal["id"], products)
 
+    active_ids = [d["id"] for d in deals]
+    cur.execute("DELETE FROM deals WHERE pipedrive_id <> ALL(%s)", (active_ids,))
+    deleted = cur.rowcount
+    if deleted:
+        print(f"  {deleted} deal(s) removidos do banco (deletados no Pipedrive).")
+
     conn.commit()
     cur.close()
     conn.close()
