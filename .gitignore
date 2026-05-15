@@ -1,0 +1,7 @@
+.env
+sync_log.txt
+__pycache__/
+*.pyc
+*.pyo
+.claude/
+*.pbix
