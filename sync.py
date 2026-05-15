@@ -5,9 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TOKEN = os.getenv("PIPEDRIVE_TOKEN")
-DB_URL = os.getenv("DATABASE_URL")
-
+TOKEN  = None
+DB_URL = None
 PIPELINE_ID = 3  # DTX LDG
 
 FIELD_KEYS = {
@@ -173,6 +172,10 @@ def upsert_deal(cur, d):
 
 
 def main():
+    global TOKEN, DB_URL
+    TOKEN  = os.getenv("PIPEDRIVE_TOKEN")
+    DB_URL = os.getenv("DATABASE_URL")
+
     print("Buscando deals do pipeline DTX LDG...")
     deals = fetch_all_deals()
     print(f"{len(deals)} deals encontrados.")

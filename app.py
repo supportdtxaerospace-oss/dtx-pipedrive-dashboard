@@ -211,6 +211,23 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# ── Botão de sync manual ───────────────────────────────────────────────────────
+_, sync_col = st.columns([5, 1])
+with sync_col:
+    if st.button("🔄 Atualizar dados", use_container_width=True):
+        os.environ["DATABASE_URL"]    = get_secret("DATABASE_URL") or ""
+        os.environ["PIPEDRIVE_TOKEN"] = get_secret("PIPEDRIVE_TOKEN") or ""
+        import importlib, sync as sync_mod
+        importlib.reload(sync_mod)
+        with st.spinner("Sincronizando com Pipedrive..."):
+            try:
+                sync_mod.main()
+                st.cache_data.clear()
+                st.success("Dados atualizados!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro na sincronização: {e}")
+
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3 = st.tabs(["  Visão Executiva  ", "  Pipeline Comercial  ", "  Portfolio de Ativos  "])
 
