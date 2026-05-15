@@ -137,6 +137,36 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
+def check_password():
+    if st.session_state.get("authenticated"):
+        return
+    st.markdown("""
+    <div style="max-width:400px;margin:80px auto;background:#FFFFFF;border-radius:16px;
+                padding:40px;box-shadow:0 4px 24px rgba(0,0,0,.10);">
+        <div style="text-align:center;margin-bottom:28px;">
+            <div style="font-size:36px;">✈️</div>
+            <div style="font-size:20px;font-weight:700;color:#0A1F44;margin-top:8px;">
+                DTX Aerospace
+            </div>
+            <div style="font-size:13px;color:#9CA3AF;margin-top:4px;">
+                Commercial Pipeline Dashboard
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    col = st.columns([1, 2, 1])[1]
+    with col:
+        pwd = st.text_input("Senha de acesso", type="password", placeholder="Digite a senha")
+        if st.button("Entrar", use_container_width=True, type="primary"):
+            if pwd == get_secret("APP_PASSWORD"):
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Senha incorreta.")
+    st.stop()
+
+check_password()
+
 PALETTE = ["#0A1F44", "#1D6FA4", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"]
 CHART_CFG = dict(
     template="plotly_white",
