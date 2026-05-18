@@ -1,0 +1,32 @@
+name: Pipedrive Sync
+
+on:
+  schedule:
+    # Segunda a sexta, de hora em hora das 07:00 às 17:00 BRT (10:00–20:00 UTC)
+    - cron: "0 10-20 * * 1-5"
+    # Segunda a sexta, 17:30 BRT (20:30 UTC)
+    - cron: "30 20 * * 1-5"
+  workflow_dispatch: # permite rodar manualmente pelo GitHub
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests psycopg2-binary python-dotenv
+
+      - name: Run sync
+        env:
+          PIPEDRIVE_TOKEN: ${{ secrets.PIPEDRIVE_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python sync.py
