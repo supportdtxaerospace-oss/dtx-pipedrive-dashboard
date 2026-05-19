@@ -171,7 +171,7 @@ def check_password():
     col = st.columns([1, 2, 1])[1]
     with col:
         pwd = st.text_input("Senha de acesso", type="password", placeholder="Digite a senha")
-        if st.button("Entrar", use_container_width=True, type="primary"):
+        if st.button("Entrar", width="stretch", type="primary"):
             if pwd == get_secret("APP_PASSWORD"):
                 st.session_state.authenticated = True
                 st.rerun()
@@ -233,7 +233,7 @@ st.markdown(f"""
 # ── Botão de sync manual ───────────────────────────────────────────────────────
 _, sync_col = st.columns([5, 1])
 with sync_col:
-    if st.button("🔄 Atualizar dados", use_container_width=True):
+    if st.button("🔄 Atualizar dados", width="stretch"):
         os.environ["DATABASE_URL"]    = get_secret("DATABASE_URL") or ""
         os.environ["PIPEDRIVE_TOKEN"] = get_secret("PIPEDRIVE_TOKEN") or ""
         import importlib, sync as sync_mod
@@ -248,18 +248,23 @@ with sync_col:
                 st.error(f"Erro na sincronização: {e}")
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["  Visão Executiva  ", "  Pipeline Comercial  ", "  Portfolio de Ativos  "])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "  Visão Executiva  ",
+    "  Pipeline Comercial  ",
+    "  Portfolio de Ativos  ",
+    "  Análise por Cliente  ",
+])
 
 
 def chart(fig, height=320):
     fig.update_layout(height=height, **CHART_CFG)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 
 def interactive_chart(fig, height, key, df_source, filter_fn):
     fig.update_layout(height=height, **CHART_CFG)
     sel = st.plotly_chart(
-        fig, use_container_width=True,
+        fig, width="stretch",
         config={"displayModeBar": False},
         on_select="rerun", key=key,
     )
@@ -280,7 +285,7 @@ def mostrar_deals(titulo, df_modal):
     disp["Produto"]        = disp["Produto"].fillna("—")
     disp["Plataforma"]     = disp["Plataforma"].fillna("—")
     disp["Tipo de Receita"]= disp["Tipo de Receita"].fillna("—")
-    st.dataframe(disp, use_container_width=True, hide_index=True)
+    st.dataframe(disp, width="stretch", hide_index=True)
     st.caption(f"{len(df_modal)} deal(s)  ·  Total: $ {df_modal['value'].sum():,.0f}")
 
 
@@ -295,7 +300,7 @@ with tab1:
     periodo_col, _ = st.columns([2, 5])
     with periodo_col:
         periodo = st.selectbox(
-            "", ["Todos", "Últimos 30 dias", "Últimos 90 dias", "Últimos 180 dias", "Este ano"],
+            "Período", ["Todos", "Últimos 30 dias", "Últimos 90 dias", "Últimos 180 dias", "Este ano"],
             label_visibility="collapsed",
         )
 
@@ -480,7 +485,7 @@ with tab1:
     top5.columns = ["Deal", "Valor (USD)", "Status", "Produto", "Tipo de Receita"]
     top5["Valor (USD)"] = top5["Valor (USD)"].apply(lambda x: f"$ {x:,.0f}")
     top5["Status"] = top5["Status"].map({"open": "🔵 Aberto", "won": "🟢 Ganho", "lost": "🔴 Perdido"})
-    st.dataframe(top5, use_container_width=True, hide_index=True)
+    st.dataframe(top5, width="stretch", hide_index=True)
     st.download_button("📥 Exportar Excel", to_excel_bytes(top5), "top5_deals.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        key="dl_top5")
@@ -507,7 +512,7 @@ with tab2:
     periodo_col2, _ = st.columns([2, 5])
     with periodo_col2:
         periodo_t2 = st.selectbox(
-            "", ["Todos", "Últimos 30 dias", "Últimos 90 dias", "Últimos 180 dias", "Este ano"],
+            "Período", ["Todos", "Últimos 30 dias", "Últimos 90 dias", "Últimos 180 dias", "Este ano"],
             label_visibility="collapsed", key="periodo_t2",
         )
 
@@ -654,7 +659,7 @@ with tab2:
     disp_tbl = disp_tbl.fillna("—")
 
     st.caption(f"{len(tbl)} deal(s) · Total: $ {tbl['value'].sum():,.0f}")
-    st.dataframe(disp_tbl, use_container_width=True, hide_index=True)
+    st.dataframe(disp_tbl, width="stretch", hide_index=True)
     st.download_button("📥 Exportar Excel", to_excel_bytes(disp_tbl), "pipeline_comercial.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        key="dl_pipeline")
@@ -797,7 +802,119 @@ with tab3:
     t3d = t3d.fillna("—")
 
     st.caption(f"{len(tbl3)} ativo(s) · Receita: $ {tbl3['lease_fee'].sum():,.0f} · Custo: $ {tbl3['monthly_costs'].sum():,.0f}")
-    st.dataframe(t3d, use_container_width=True, hide_index=True)
+    st.dataframe(t3d, width="stretch", hide_index=True)
     st.download_button("📥 Exportar Excel", to_excel_bytes(t3d), "portfolio_ativos.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        key="dl_portfolio")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# TAB 4 · Análise por Cliente
+# ═════════════════════════════════════════════════════════════════════════════
+with tab4:
+    df = deals.copy()
+    df_org = df[df["org_name"].notna()].copy()
+
+    # ── KPIs ──────────────────────────────────────────────────────────────────
+    total_clientes = df_org["org_name"].nunique()
+
+    open_por_org = df_org[df_org["status"] == "open"].groupby("org_name")["value"].sum()
+    top_org_nome = open_por_org.idxmax() if not open_por_org.empty else "—"
+    top_org_val  = open_por_org.max()    if not open_por_org.empty else 0
+    avg_por_cliente = open_por_org.mean() if not open_por_org.empty else 0
+
+    closed_org   = df_org[df_org["status"].isin(["won", "lost"])]
+    n_won_org    = (closed_org["status"] == "won").sum()
+    n_closed_org = len(closed_org)
+    win_rate_str = f"{n_won_org / n_closed_org * 100:.1f}%" if n_closed_org > 0 else "—"
+
+    k1, k2, k3, k4 = st.columns(4)
+    k1.markdown(f'<div class="kpi"><div class="kpi-label">Clientes Cadastrados</div><div class="kpi-value">{total_clientes}</div><div class="kpi-sub">organizações com deals</div></div>', unsafe_allow_html=True)
+    k2.markdown(f'<div class="kpi amber"><div class="kpi-label">Maior Cliente</div><div class="kpi-value">$ {top_org_val:,.0f}</div><div class="kpi-sub">{top_org_nome}</div></div>', unsafe_allow_html=True)
+    k3.markdown(f'<div class="kpi"><div class="kpi-label">Ticket Médio / Cliente</div><div class="kpi-value">$ {avg_por_cliente:,.0f}</div><div class="kpi-sub">pipeline aberto por org</div></div>', unsafe_allow_html=True)
+    k4.markdown(f'<div class="kpi green"><div class="kpi-label">Win Rate Geral</div><div class="kpi-value">{win_rate_str}</div><div class="kpi-sub">{n_won_org} ganhos de {n_closed_org} fechados</div></div>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Top Clientes por Valor de Pipeline Aberto ─────────────────────────────
+    st.markdown('<p class="sec">Top Clientes por Valor de Pipeline (Aberto)</p>', unsafe_allow_html=True)
+    top_cl = open_por_org.reset_index().rename(columns={"value": "valor"}).sort_values("valor", ascending=True)
+    if not top_cl.empty:
+        fig = px.bar(
+            top_cl, x="valor", y="org_name", orientation="h",
+            color_discrete_sequence=["#0A1F44"],
+            text=top_cl["valor"].apply(lambda x: f"$ {x:,.0f}"),
+        )
+        fig.update_traces(textposition="inside", textfont=dict(color="white", size=12))
+        fig.update_layout(
+            xaxis=dict(title="", showticklabels=False, showgrid=False),
+            yaxis_title="",
+            margin=dict(t=10, b=10, l=10, r=20),
+        )
+
+        def filtro_top_cliente(pt, src):
+            org = pt.get("y", "")
+            filtered = src[src["org_name"] == org]
+            return filtered, f"Deals — {org}"
+
+        interactive_chart(fig, max(300, len(top_cl) * 46), "top_cliente", deals, filtro_top_cliente)
+    else:
+        st.info("Sem deals abertos com organização preenchida.")
+
+    # ── Tabela resumida por cliente ───────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<p class="sec">Resumo por Cliente</p>', unsafe_allow_html=True)
+
+    resumo = df_org.groupby("org_name").agg(
+        total_deals=("pipedrive_id", "count"),
+        abertos=("status", lambda x: (x == "open").sum()),
+        ganhos=("status", lambda x: (x == "won").sum()),
+        perdidos=("status", lambda x: (x == "lost").sum()),
+        valor_total=("value", "sum"),
+    ).reset_index()
+
+    pipeline_val = open_por_org.reset_index().rename(columns={"value": "valor_pipeline"})
+    resumo = resumo.merge(pipeline_val, on="org_name", how="left")
+    resumo["valor_pipeline"] = resumo["valor_pipeline"].fillna(0)
+
+    fechados_col = resumo["ganhos"] + resumo["perdidos"]
+    resumo["win_rate"] = (resumo["ganhos"] / fechados_col * 100).where(fechados_col > 0)
+    resumo = resumo.sort_values("valor_pipeline", ascending=False)
+
+    fc_col, _ = st.columns([2, 5])
+    with fc_col:
+        f_status_org = st.selectbox(
+            "Filtrar por perfil",
+            ["Todos", "Com pipeline aberto", "Com deals ganhos", "Apenas fechados"],
+            key="f_status_org",
+        )
+
+    tbl_resumo = resumo.copy()
+    if f_status_org == "Com pipeline aberto":
+        tbl_resumo = tbl_resumo[tbl_resumo["abertos"] > 0]
+    elif f_status_org == "Com deals ganhos":
+        tbl_resumo = tbl_resumo[tbl_resumo["ganhos"] > 0]
+    elif f_status_org == "Apenas fechados":
+        tbl_resumo = tbl_resumo[tbl_resumo["abertos"] == 0]
+
+    disp_resumo = tbl_resumo[
+        ["org_name", "total_deals", "abertos", "ganhos", "perdidos",
+         "valor_pipeline", "valor_total", "win_rate"]
+    ].copy()
+    disp_resumo["valor_pipeline"] = disp_resumo["valor_pipeline"].apply(lambda x: f"$ {x:,.0f}")
+    disp_resumo["valor_total"]    = disp_resumo["valor_total"].apply(lambda x: f"$ {x:,.0f}")
+    disp_resumo["win_rate"]       = disp_resumo["win_rate"].apply(
+        lambda x: f"{x:.1f}%" if pd.notna(x) else "—"
+    )
+    disp_resumo.columns = [
+        "Cliente", "Total Deals", "Abertos", "Ganhos", "Perdidos",
+        "Valor Pipeline", "Valor Total", "Win Rate",
+    ]
+
+    st.caption(f"{len(tbl_resumo)} cliente(s)")
+    st.dataframe(disp_resumo, width="stretch", hide_index=True)
+    st.download_button(
+        "📥 Exportar Excel", to_excel_bytes(disp_resumo), "analise_clientes.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        key="dl_clientes",
+    )
